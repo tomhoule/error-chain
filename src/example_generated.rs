@@ -26,13 +26,15 @@ pub mod inner {
 
 error_chain! {
     links {
-        Inner(inner::Error) #[doc = "Link to another `ErrorChain`."];
+        /// "Link to another `ErrorChain`.
+        Inner(inner::Error);
     }
     foreign_links {
-        Io(::std::io::Error) #[doc = "Link to a `std::error::Error` type."];
+        /// Link to a `std::error::Error` type.
+        Io(::std::io::Error);
     }
     errors {
-        #[doc = "A custom error kind."]
+        /// "A custom error kind."
         Custom
     }
 }

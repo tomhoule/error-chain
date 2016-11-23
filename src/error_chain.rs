@@ -36,13 +36,13 @@ macro_rules! error_chain_processed {
         }
 
         links {
-            $( $link_variant:ident ( $link_error_path:path )
-               $( #[$meta_links:meta] )*; ) *
+            $( [$( #[$meta_links:meta] )*]
+               $link_variant:ident ( $link_error_path:path ); ) *
         }
 
         foreign_links {
-            $( $foreign_link_variant:ident ( $foreign_link_error_path:path )
-               $( #[$meta_foreign_links:meta] )*; )*
+            $( [$( #[$meta_foreign_links:meta] )*]
+               $foreign_link_variant:ident ( $foreign_link_error_path:path ); )*
         }
 
         errors {
@@ -254,6 +254,38 @@ macro_rules! error_chain_processed {
 /// Internal macro used for reordering of the fields.
 #[doc(hidden)]
 #[macro_export]
+macro_rules! handle_attributes {
+    ( { $($inner: tt)* } ) => {
+        handle_attributes!([] { $($inner)* } {})
+    };
+    ( [ $($attrs: tt)* ]
+      { #[$attr: meta] $( $to_parse:tt )* }
+      { $( $already_parsed:tt )* } ) => {
+        handle_attributes!([ $( $attrs )* #[$attr] ]
+                           { $( $to_parse )* }
+                           { $( $already_parsed )* })
+    };
+    ( [ $($attrs: tt)* ]
+      { $name:ident ( $variant:path ) $( $to_parse:tt )* }
+      { $already_parsed:tt } ) => {
+        handle_attributes!([]
+                           { $( $to_parse )* }
+                           { $( $already_parsed )*
+                             [ $( $attrs )* ]
+                             $name ( $variant )})
+    };
+    ( []
+      {}
+      { $( $parsed:tt )* }) => {
+        {
+            $( $parsed )*
+        }
+    };
+}
+
+/// Internal macro used for reordering of the fields.
+#[doc(hidden)]
+#[macro_export]
 macro_rules! error_chain_processing {
     (
         ({}, $b:tt, $c:tt, $d:tt)
@@ -261,7 +293,7 @@ macro_rules! error_chain_processing {
         $( $tail:tt )*
     ) => {
         error_chain_processing! {
-            ($content, $b, $c, $d)
+            (handle_attributes!($content), $b, $c, $d)
             $($tail)*
         }
     };
@@ -271,7 +303,7 @@ macro_rules! error_chain_processing {
         $( $tail:tt )*
     ) => {
         error_chain_processing! {
-            ($a, $content, $c, $d)
+            ($a, handle_attributes!($content), $c, $d)
             $($tail)*
         }
     };
